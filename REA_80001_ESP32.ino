@@ -1,5 +1,6 @@
 #include <ESP32-TWAI-CAN.hpp>
 #include <Adafruit_NeoPixel.h>
+#include <SparkFunDMX.h>
 
 #define LED_STATUS_PIN 1
 #define LED_STATUS_ADDRESS 0
@@ -9,10 +10,6 @@
 
 #define PIN_LED_DO 21
 #define PIN_LED_CLK 22
-
-#define PIN_DMX_EN1 20
-#define PIN_DMX_RX1 19
-#define PIN_DMX_TX1 18
 
 #define CAN_STUFFING_FRAME 0xAA
 #define CAN_IDENTIFIER 0x0A
@@ -45,6 +42,7 @@ void setup() {
   initializeStatusLED();
   initializeLEDStrip();
   initializeSerial();
+  initializeDMX();
   initCAN();
 }
 
@@ -54,6 +52,7 @@ void loop() {
   if(testPatternState){
     runTestPattern();
   }
+  updateDMX();
 
 }
 

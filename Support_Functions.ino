@@ -1,15 +1,4 @@
-void initializeStatusLED() {
-  status_led.begin();
-  status_led.clear();
-  status_led.setPixelColor(0, status_led.Color(10, 10, 10));
-  status_led.show();
-}
 
-void initializeLEDStrip() {
-  led_strip.begin();
-  led_strip.clear();
-  led_strip.show();
-}
 
 void initCAN() {
   if (ESP32Can.begin(ESP32Can.convertSpeed(125), CAN_TX, CAN_RX, 10, 10)) {
@@ -82,6 +71,8 @@ void printCommands() {
   Serial.println("12V : Turn on 12V LED Power");
   Serial.println("5V : Turn on 5V LED Power");
   Serial.println("t : Run/Stop Test Pattern on LED Strip (power must be enabled first)");
+  Serial.println("d : Write test DMX Packet");
+  Serial.println("r : Toggle DMX Packet Reading");
 }
 
 void serialParser() {
@@ -115,9 +106,19 @@ void serialParser() {
       Serial.println("Starting/Stopping Test Pattern");
       validCommand = true;
     }
+    if (strcmp(inputString, "d") == 0) {
+      Serial.println("Writing DMX Test Pattern");
+      writeDMX();
+      validCommand = true;
+    }
+    if (strcmp(inputString, "r") == 0) {
+      toggleDMXRead();
+      validCommand = true;
+    }
 
     if (validCommand == false) {
       Serial.println("Invalid Command");
+      printCommands();
     }
 
     memset(inputString, 0, sizeof(inputString));

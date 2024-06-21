@@ -5,6 +5,19 @@ unsigned long lastUpdate = 0;                     // for millis() when last upda
 unsigned long intervals[] = { 20, 20, 50, 100 };  // speed for each pattern
 unsigned long patternTimer = 0;
 
+void initializeStatusLED() {
+  status_led.begin();
+  status_led.clear();
+  status_led.setPixelColor(0, status_led.Color(10, 10, 10));
+  status_led.show();
+}
+
+void initializeLEDStrip() {
+  led_strip.begin();
+  led_strip.clear();
+  led_strip.show();
+}
+
 void runTestPattern() {
   static int pattern = 0, lastReading;
 
