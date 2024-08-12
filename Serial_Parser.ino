@@ -1,58 +1,3 @@
-
-
-void initCAN() {
-  if (ESP32Can.begin(ESP32Can.convertSpeed(125), CAN_TX, CAN_RX, 10, 10)) {
-    Serial.println("CAN bus started!");
-  } else {
-    Serial.println("CAN bus failed!");
-  }
-}
-
-void checkCANMessages() {
-  if (ESP32Can.readFrame(rxFrame, 0)) {
-    uint8_t ident = rxFrame.identifier;
-    uint8_t CANMessageType = rxFrame.data[0];
-    uint8_t parameter = rxFrame.data[1];
-    // Serial.println(ident);
-    // Serial.println(CANMessageType);
-    // Serial.println(parameter);
-    if (ident == CAN_IDENTIFIER) {
-      if (CANMessageType == CAN_PSU_VOLTAGE) {
-        if (parameter > 0 && parameter <= PSU_5V) {
-          updatePowerState((PSUState)parameter);
-        }
-      }
-      if (CANMessageType == CAN_TEST_PATTERN) {
-        testPatternState = !testPatternState;
-      }
-    }
-  }
-}
-
-
-void sendVoltageCommand(PSUState voltageState) {
-  Serial.println("Sending Supply Voltage CAN Message.");
-  updatePowerState(voltageState);
-  CanFrame txFrame = { 0 };
-  txFrame.identifier = CAN_IDENTIFIER;
-  txFrame.extd = 0;
-  txFrame.data_length_code = 8;
-  txFrame.data[0] = CAN_PSU_VOLTAGE;
-  txFrame.data[1] = voltageState;
-  txFrame.data[2] = CAN_STUFFING_FRAME;
-  txFrame.data[3] = CAN_STUFFING_FRAME;
-  txFrame.data[4] = CAN_STUFFING_FRAME;
-  txFrame.data[5] = CAN_STUFFING_FRAME;
-  txFrame.data[6] = CAN_STUFFING_FRAME;
-  txFrame.data[7] = CAN_STUFFING_FRAME;
-  ESP32Can.writeFrame(txFrame, 0);
-}
-
-void updatePowerState(PSUState commandedSupplyState) {
-  updateStatusLED(commandedSupplyState);
-  psuState = commandedSupplyState;
-}
-
 const int maxLength = 50;     // Maximum length of the input string
 char inputString[maxLength];  // Array to hold the incoming string
 int inputIndex = 0;           // Index to keep track of the current position in the array
@@ -73,6 +18,9 @@ void printCommands() {
   Serial.println("t : Run/Stop Test Pattern on LED Strip (power must be enabled first)");
   Serial.println("d : Write test DMX Packet");
   Serial.println("r : Toggle DMX Packet Reading");
+  Serial.println("c : Send current measurement request");
+  Serial.println("z : Send Zero Current Request");
+  Serial.println("ad : Auto Detect LED Strip Voltage");
 }
 
 void serialParser() {
@@ -115,6 +63,19 @@ void serialParser() {
       toggleDMXRead();
       validCommand = true;
     }
+    if (strcmp(inputString, "c") == 0) {
+      sendCurrentMeasureCommand();
+      validCommand = true;
+    }
+    if (strcmp(inputString, "z") == 0) {
+      sendZeroCurrentCommand();
+      validCommand = true;
+    }
+    if (strcmp(inputString, "ad") == 0) {
+      startAutoDetect();
+      validCommand = true;
+    }
+
 
     if (validCommand == false) {
       Serial.println("Invalid Command");
@@ -138,20 +99,4 @@ void serialParser() {
       }
     }
   }
-}
-
-void updateStatusLED(PSUState commandedSupplyState) {
-  if (commandedSupplyState == PSU_POWER_OFF) {
-    status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(10, 10, 10));
-  }
-  if (commandedSupplyState == PSU_20V) {
-    status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(0, 0, 10));
-  }
-  if (commandedSupplyState == PSU_12V) {
-    status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(0, 10, 10));
-  }
-  if (commandedSupplyState == PSU_5V) {
-    status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(0, 10, 0));
-  }
-  status_led.show();
 }

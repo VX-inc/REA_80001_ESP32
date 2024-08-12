@@ -1,23 +1,3 @@
-#include <ESP32-TWAI-CAN.hpp>
-#include <Adafruit_NeoPixel.h>
-#include <SparkFunDMX.h>
-
-#define LED_STATUS_PIN 1
-#define LED_STATUS_ADDRESS 0
-
-#define CAN_TX 5
-#define CAN_RX 4
-
-#define PIN_LED_DO 21
-#define PIN_LED_CLK 22
-
-#define CAN_STUFFING_FRAME 0xAA
-#define CAN_IDENTIFIER 0x0A
-
-#define LED_STRIP_LED_COUNT 60
-
-CanFrame rxFrame;
-
 enum PSUState {
   PSU_POWER_OFF = 1,
   PSU_20V = 2,
@@ -25,20 +5,22 @@ enum PSUState {
   PSU_5V = 4
 };
 
-enum CANDataType {
-  CAN_PSU_VOLTAGE = 1,
-  CAN_TEST_PATTERN = 2
+enum PSUStatus {
+  PSU_OK = 0,
+  PSU_OVER_CURRENT = 1
 };
 
-static bool testPatternState = false;
-
-PSUState psuState = PSU_POWER_OFF;
-
-Adafruit_NeoPixel status_led(1, LED_STATUS_PIN, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoPixel led_strip(LED_STRIP_LED_COUNT, PIN_LED_DO, NEO_RGB + NEO_KHZ800);
+enum CANDataType {
+  CAN_PSU_VOLTAGE = 1,
+  CAN_TEST_PATTERN = 2,
+  CAN_CURRENT_REQUEST = 3,
+  CAN_CURRENT_ZERO_REQUEST = 4,
+  CAN_CURRENT_DATA = 5,
+  CAN_PSU_STATUS = 6,
+  CAN_PSU_TEST_VOLTAGE = 7
+};
 
 void setup() {
-  delay(2000);
   initializeStatusLED();
   initializeLEDStrip();
   initializeSerial();
@@ -47,12 +29,24 @@ void setup() {
 }
 
 void loop() {
-  checkCANMessages();
-  serialParser();
-  if(testPatternState){
-    runTestPattern();
-  }
-  updateDMX();
-
+  slottedLoop();
 }
 
+//Functions that run once every 100ms
+void Slot_100ms() {
+  refreshStatusLED();
+  LEDStrip100msHandler();
+}
+
+//Functions that run once every 10ms
+void Slot_10ms() {
+  checkCANMessages();
+  serialParser();
+  LEDStrip10msHandler();
+}
+
+//Functions that run once every loop (the fastest possible)
+void Slot_EveryLoop() {
+  LEDStripHandler();
+  updateDMX();
+}
