@@ -136,7 +136,7 @@ void AutoVoltageDetect() {
           autoDetectStart = false;
           voltageAttempt = PSU_5V;
           loopDelay = 1;
-          //Serial.println("State: AD_START");
+          Serial.println("State: AD_START");
         }
         break;
 
@@ -145,9 +145,9 @@ void AutoVoltageDetect() {
           autoDetectState = AD_ENABLE_POWER;
           sendVoltageCommand(voltageAttempt);
           clearLEDStripActive = true;
-          //Serial.println("State: AD_ENABLE_POWER");
+          Serial.println("State: AD_ENABLE_POWER");
           if (voltageAttempt == PSU_5V) {
-            Serial.println("Turing nn 5V supply");
+            Serial.println("Turing on 5V supply");
           }
           if (voltageAttempt == PSU_12V) {
             Serial.println("Turing on 12V supply");
@@ -158,7 +158,7 @@ void AutoVoltageDetect() {
       case AD_ENABLE_POWER:
         if (PSUStatusReceived) {
           autoDetectState = AD_TESTSHORT;
-          //Serial.println("State: AD_TESTSHORT");
+          Serial.println("State: AD_TESTSHORT");
           loopDelay = 5;
         }
         break;
@@ -167,14 +167,14 @@ void AutoVoltageDetect() {
         clearLEDStripActive = false;
         sendZeroCurrentCommand();
         autoDetectState = AD_ZERO_CURRENT;
-        //Serial.println("State: AD_ZERO_CURRENT");
+        Serial.println("State: AD_ZERO_CURRENT");
         Serial.println("Zeroing current measurement");
         break;
 
       case AD_ZERO_CURRENT:
         if (currentRequestReturned()) {
           autoDetectState = AD_COMMAND_STRIP;
-          //Serial.println("State: AD_COMMAND_STRIP");
+          Serial.println("State: AD_COMMAND_STRIP");
           loopDelay = 5;
           testLEDStripActive = true;
           Serial.println("Measuring current");
@@ -184,7 +184,7 @@ void AutoVoltageDetect() {
       case AD_COMMAND_STRIP:
         sendCurrentMeasureCommand();
         autoDetectState = AD_MEASURE_CURRENT;
-        //Serial.println("State: AD_MEASURE_CURRENT");
+        Serial.println("State: AD_MEASURE_CURRENT");
         break;
 
       case AD_MEASURE_CURRENT:
@@ -193,7 +193,7 @@ void AutoVoltageDetect() {
             testLEDStripActive = false;
             clearLEDStripActive = true;
             autoDetectState = AD_COMPLETE;
-            //Serial.println("State: AD_COMPLETE");
+            Serial.println("State: AD_COMPLETE");
           } else {
             if (voltageAttempt == PSU_5V) {
               Serial.println("Strip not detected at 5V");
