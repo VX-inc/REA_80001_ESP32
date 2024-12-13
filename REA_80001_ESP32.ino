@@ -1,3 +1,5 @@
+#include <ArtnetETH.h>
+
 enum PSUState {
   PSU_POWER_OFF = 1,
   PSU_20V = 2,
@@ -26,16 +28,19 @@ void setup() {
   initializeSerial();
   initializeDMX();
   initCAN();
+  initializeConnectionManager();
 }
 
 void loop() {
   slottedLoop();
+  connectionManagerFastHandler();
 }
 
 //Functions that run once every 100ms
 void Slot_100ms() {
   refreshStatusLED();
   LEDStrip100msHandler();
+  connectionManagerSlowHandler();
 }
 
 //Functions that run once every 10ms
@@ -48,5 +53,6 @@ void Slot_10ms() {
 //Functions that run once every loop (the fastest possible)
 void Slot_EveryLoop() {
   LEDStripHandler();
-  updateDMX();
+  DMXLoop();
+
 }

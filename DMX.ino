@@ -7,7 +7,7 @@
 SparkFunDMX dmx;
 HardwareSerial dmxSerial(1);
 
-uint16_t numChannels = 1;
+uint16_t numChannels = 511;
 
 bool DMXReadActive = false;
 
@@ -16,8 +16,11 @@ void initializeDMX() {
   dmx.begin(dmxSerial, PIN_DMX_EN1, numChannels);
 }
 
-void writeDMX() {
-  dmx.setComDir(DMX_WRITE_DIR);
+void testWriteDMX() {
+  if (!DMXReadActive) {
+    dmx.setComDir(DMX_WRITE_DIR);
+    DMXReadActive = false;
+  }
   dmx.writeByte(55, 1);
   dmx.update();
 
@@ -25,8 +28,17 @@ void writeDMX() {
   Serial.println(55);
 }
 
+void writeDMX(uint8_t data, uint16_t channel) {
+  if (!DMXReadActive) {
+    dmx.setComDir(DMX_WRITE_DIR);
+    DMXReadActive = false;
+  }
+  dmx.writeByte(data, channel + 1);
+}
+
 void readDMX() {
   dmx.setComDir(DMX_READ_DIR);
+  DMXReadActive = true;
 
   dmx.update();
   if (dmx.dataAvailable() == true) {
@@ -36,10 +48,14 @@ void readDMX() {
   }
 }
 
-void updateDMX() {
+void DMXLoop() {
   if (DMXReadActive) {
     readDMX();
   }
+}
+
+void updateDMX() {
+  dmx.update();
 }
 
 void toggleDMXRead() {

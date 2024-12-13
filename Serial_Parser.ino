@@ -21,10 +21,13 @@ void printCommands() {
   Serial.println("c : Send current measurement request");
   Serial.println("z : Send Zero Current Request");
   Serial.println("ad : Auto Detect LED Strip Voltage");
+  Serial.println("p : Print Artnet Data Received.");
 }
 
 void serialParser() {
   if (stringComplete) {
+    Serial.print("Command Received: ");
+    Serial.println(inputString);
     bool validCommand = false;
 
     if (strcmp(inputString, "0") == 0) {
@@ -56,7 +59,7 @@ void serialParser() {
     }
     if (strcmp(inputString, "d") == 0) {
       Serial.println("Writing DMX Test Pattern");
-      writeDMX();
+      testWriteDMX();
       validCommand = true;
     }
     if (strcmp(inputString, "r") == 0) {
@@ -75,10 +78,15 @@ void serialParser() {
       startAutoDetect();
       validCommand = true;
     }
+    if (strcmp(inputString, "p") == 0) {
+      enableArtnetPrint();
+      validCommand = true;
+    }
 
 
     if (validCommand == false) {
       Serial.println("Invalid Command");
+      disableArtnetPrint();
       printCommands();
     }
 
