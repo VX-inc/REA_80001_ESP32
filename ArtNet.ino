@@ -17,7 +17,7 @@ void initializeArtnet() {
 }
 
 void callback_universe1(const uint8_t *data, uint16_t size, const ArtDmxMetadata &metadata, const ArtNetRemoteInfo &remote) {
-  //printArtnetData(data, size, universe1, metadata, remote);
+  printArtnetData(data, size, universe1, metadata, remote);
   for (int channel = 0; channel < size; channel++) {
     writeDMX(data[channel], channel);
   }

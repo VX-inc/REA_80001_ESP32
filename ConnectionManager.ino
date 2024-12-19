@@ -4,13 +4,7 @@ bool connectedToWifi = false;
 uint8_t wifiTimer = 20;
 uint8_t connectionTimer = 50;
 
-// Define states as an enumeration for clarity
-typedef enum {
-  DISCONNECTED,
-  CONNECTED_TO_ETHERNET,
-  CONNECTING_TO_WIFI,
-  CONNECTED_TO_WIFI
-} CONNECTION_ENUM;
+
 
 // Variables to hold the current state and flags for entrance and exit routines
 CONNECTION_ENUM currentState = DISCONNECTED;
@@ -51,7 +45,7 @@ void connectionStateMachine() {
   switch (currentState) {
     case DISCONNECTED:
       if (!hasEnteredState) {
-        wifiTimer = 20;
+        wifiTimer = 50;
         hasEnteredState = true;
         Serial.println("DISCONNECTED");
       }
@@ -120,6 +114,11 @@ void connectionStateMachine() {
         setConnectionState(DISCONNECTED);
       }
 
+      if (ethernetConnected()){
+        setConnectionState(DISCONNECTED);
+        WiFi.disconnect();
+      }
+
       if (!hasExitedState) {
         hasExitedState = true;
       }
@@ -143,5 +142,6 @@ void printConnectionStatus() {
   } else {
     Serial.println("WiFi: Disconnected");
   }
-  Serial.printf("ETH Got IP: '%s'\n", esp_netif_get_desc(info.got_ip.esp_netif));
+  Serial.print("ETH Got IP: ");
+  Serial.println(WiFi.localIP());
 }

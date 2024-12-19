@@ -10,18 +10,23 @@ void initializeSerial() {
 }
 
 void printCommands() {
+  Serial.println("---------------------------------------------------------------------------");
   Serial.println("The test commands are as follows:");
+  Serial.println("ip : Print Network Status");
   Serial.println("0 : Turn off LED Power Supply");
   Serial.println("20V : Turn on 20V LED Power (currently not functional)");
   Serial.println("12V : Turn on 12V LED Power");
   Serial.println("5V : Turn on 5V LED Power");
+  Serial.println("pd : print the USB-C PD Profile");
   Serial.println("t : Run/Stop Test Pattern on LED Strip (power must be enabled first)");
+  Serial.println("scan : Run I2C Scanner");
   Serial.println("d : Write test DMX Packet");
   Serial.println("r : Toggle DMX Packet Reading");
   Serial.println("c : Send current measurement request");
   Serial.println("z : Send Zero Current Request");
   Serial.println("ad : Auto Detect LED Strip Voltage");
   Serial.println("p : Print Artnet Data Received.");
+  Serial.println("---------------------------------------------------------------------------");
 }
 
 void serialParser() {
@@ -30,6 +35,10 @@ void serialParser() {
     Serial.println(inputString);
     bool validCommand = false;
 
+    if (strcmp(inputString, "ip") == 0) {
+      printConnectionStatus();
+      validCommand = true;
+    }
     if (strcmp(inputString, "0") == 0) {
       sendVoltageCommand(PSU_POWER_OFF);
       Serial.println("Turning off LED Power ");

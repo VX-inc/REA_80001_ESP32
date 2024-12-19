@@ -19,10 +19,10 @@ void slottedLoop() {
   Slot_EveryLoop();
 }
 
-#define LED_STATUS_PIN 1
+#define LED_STATUS_PIN 15
 #define LED_STATUS_ADDRESS 0
 
-Adafruit_NeoPixel status_led(1, LED_STATUS_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel status_led(4, LED_STATUS_PIN, NEO_GRB + NEO_KHZ800);
 
 void initializeStatusLED() {
   status_led.begin();
@@ -37,16 +37,42 @@ void refreshStatusLED() {
 
 void updateStatusLED(PSUState commandedSupplyState) {
   if (commandedSupplyState == PSU_POWER_OFF) {
-    status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(10, 10, 10));
+    status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(20, 20, 20));
   }
   if (commandedSupplyState == PSU_20V) {
-    status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(0, 0, 10));
+    status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(0, 0, 20));
   }
   if (commandedSupplyState == PSU_12V) {
-    status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(0, 10, 10));
+    status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(0, 20, 20));
   }
   if (commandedSupplyState == PSU_5V) {
-    status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(0, 10, 0));
+    status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(0, 20, 0));
   }
   status_led.show();
+}
+
+void updatePDStatusLED(HUSB238_PDSelection pdStatus) {
+  if (pdStatus == PD_SRC_20V) {
+    status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(0, 20, 0));
+  } else {
+    status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(20, 0, 0));
+  }
+  while (!status_led.canShow()) {}
+  status_led.show();
+}
+
+void ledHandler(void) {
+  updateStatusLED(getPSUStatus());
+  updatePDStatusLED(getPDStatus());
+}
+
+void updatePowerState(PSUState commandedSupplyState) {
+  Serial.print("Power Supply State: ");
+  Serial.println(commandedSupplyState);
+  powerStateMachineCommand(commandedSupplyState);
+  psuState = commandedSupplyState;
+}
+
+void refreshStatusLED() {
+  updateStatusLED(psuState);
 }

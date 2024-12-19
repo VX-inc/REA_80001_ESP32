@@ -1,4 +1,16 @@
 #include <ArtnetETH.h>
+#include <WiFi.h>
+#include <WiFiUdp.h>
+#include "Adafruit_HUSB238.h"
+#include <Wire.h>
+
+// Define states as an enumeration for clarity
+typedef enum {
+  DISCONNECTED,
+  CONNECTED_TO_ETHERNET,
+  CONNECTING_TO_WIFI,
+  CONNECTED_TO_WIFI
+} CONNECTION_ENUM;
 
 enum PSUState {
   PSU_POWER_OFF = 1,
@@ -54,5 +66,4 @@ void Slot_10ms() {
 void Slot_EveryLoop() {
   LEDStripHandler();
   DMXLoop();
-
 }

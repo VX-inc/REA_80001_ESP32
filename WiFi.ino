@@ -1,5 +1,4 @@
-#include <WiFi.h>
-#include <WiFiUdp.h>
+
 
 //Wifi settings
 char ssid[] = "Reactance";  //Change these lines to an existing SSID and Password if you're trying to connect to an existing network
