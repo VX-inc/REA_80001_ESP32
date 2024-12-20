@@ -278,6 +278,16 @@ void clearLEDStrip() {
   led_strip.show();
 }
 
+void outputLEDArtnetData(const uint8_t *data, uint16_t size) {
+  for (int i = 0; i < size / 3; i++) {
+    int led = i;
+    if (led < 170) {
+      led_strip.setPixelColor(led, led_strip.Color(data[i * 3], data[i * 3 + 1], data[i * 3 + 2]));
+    }
+  }
+  led_strip.show();
+}
+
 void testLEDStripCurrent() {
   for (uint8_t i = 0; i <= 10; i++) {
     led_strip.setPixelColor(i, led_strip.Color(200, 200, 200));

@@ -8,7 +8,7 @@ const IPAddress subnet_mask(255, 255, 255, 0);
 #define ETH_PHY_TYPE ETH_PHY_W5500
 #define ETH_PHY_ADDR 1
 #define ETH_PHY_CS 3
-#define ETH_PHY_IRQ 23
+#define ETH_PHY_IRQ 14
 #define ETH_PHY_RST -1
 
 // SPI pins

@@ -25,3 +25,32 @@ void updatePowerState(PSUState commandedSupplyState) {
   psuState = commandedSupplyState;
 }
 
+PSUState getPSUStatus(void) {
+  return psuState;
+}
+
+void psuAutoStart() {
+  static uint8_t countdown = 20;
+  if (countdown >= 1) {
+    if (countdown == 1) {
+      PSUState state = (PSUState)readUint8FromEEPROM(EEPROM_ID_VOLTAGE);
+      if (state == PSU_POWER_OFF || state == PSU_12V || state == PSU_5V) {
+         sendVoltageCommand(state);
+         Serial.print("Startup Voltage Set: ");
+         Serial.println(state);
+      } else {
+        Serial.println("Invalid PSU Start up State set in EEPROM");
+      }
+    }
+    countdown--;
+  }
+}
+
+void setPowerOnState(PSUState state) {
+  if (state == PSU_POWER_OFF || state == PSU_12V || state == PSU_5V) {
+    writeUint8ToEEPROM(EEPROM_ID_VOLTAGE, state);
+    Serial.println("Startup Voltage Configuration Set Successfully!");
+  } else {
+    Serial.println("Invalid Power Supply State Received.");
+  }
+}

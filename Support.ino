@@ -21,6 +21,8 @@ void slottedLoop() {
 
 #define LED_STATUS_PIN 15
 #define LED_STATUS_ADDRESS 0
+#define LED_PD_STATUS_ADDRESS 1
+#define LED_CONNECTION_STATUS_ADDRESS 2
 
 Adafruit_NeoPixel status_led(4, LED_STATUS_PIN, NEO_GRB + NEO_KHZ800);
 
@@ -29,10 +31,6 @@ void initializeStatusLED() {
   status_led.clear();
   status_led.setPixelColor(0, status_led.Color(10, 10, 10));
   status_led.show();
-}
-
-void refreshStatusLED() {
-  updateStatusLED(psuState);
 }
 
 void updateStatusLED(PSUState commandedSupplyState) {
@@ -51,28 +49,37 @@ void updateStatusLED(PSUState commandedSupplyState) {
   status_led.show();
 }
 
-void updatePDStatusLED(HUSB238_PDSelection pdStatus) {
-  if (pdStatus == PD_SRC_20V) {
-    status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(0, 20, 0));
-  } else {
-    status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(20, 0, 0));
+void updateCableFlipStatusLED(uint8_t value) {
+  if (value == 0) {
+    status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(0, 0, 0));
   }
-  while (!status_led.canShow()) {}
+   if (value == 1) {
+    status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(20, 0, 0));
+  } 
+  if (value == 2) {
+    status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(0, 20, 0));
+  }
+  status_led.show();
+}
+
+void updateConnectionStatusLED(CONNECTION_ENUM state) {
+  if (state == DISCONNECTED) {
+    status_led.setPixelColor(LED_CONNECTION_STATUS_ADDRESS, status_led.Color(20, 0, 0));
+  }
+  if (state == CONNECTED_TO_ETHERNET) {
+    status_led.setPixelColor(LED_CONNECTION_STATUS_ADDRESS, status_led.Color(0, 20, 0));
+  }
+  if (state == CONNECTING_TO_WIFI) {
+    status_led.setPixelColor(LED_CONNECTION_STATUS_ADDRESS, status_led.Color(20, 0, 0));
+  }
+  if (state == CONNECTED_TO_WIFI) {
+    status_led.setPixelColor(LED_CONNECTION_STATUS_ADDRESS, status_led.Color(0, 0, 20));
+  }
   status_led.show();
 }
 
 void ledHandler(void) {
+  updateConnectionStatusLED(getConnectionStatus());
   updateStatusLED(getPSUStatus());
-  updatePDStatusLED(getPDStatus());
-}
-
-void updatePowerState(PSUState commandedSupplyState) {
-  Serial.print("Power Supply State: ");
-  Serial.println(commandedSupplyState);
-  powerStateMachineCommand(commandedSupplyState);
-  psuState = commandedSupplyState;
-}
-
-void refreshStatusLED() {
-  updateStatusLED(psuState);
+  //updatePDStatusLED(PD_SRC_20V);
 }

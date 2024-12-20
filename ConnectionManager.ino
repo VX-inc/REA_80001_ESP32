@@ -22,10 +22,8 @@ void connectionManagerSlowHandler() {
   connectionStateMachine();
 }
 
-void connectionManagerFastHandler() {
-  if (ethernetConnected()) {
-    artnetLoop();
-  }
+CONNECTION_ENUM getConnectionStatus() {
+  return currentState;
 }
 
 // Function to set the state and reset the entrance and exit flags
@@ -69,10 +67,12 @@ void connectionStateMachine() {
       if (!hasEnteredState) {
         hasEnteredState = true;
         Serial.println("CONNECTED_TO_ETHERNET");
+        initializeArtnetETH();
       }
 
       if (!ethernetConnected()) {
         setConnectionState(DISCONNECTED);
+        disableArtnetETH();
       }
 
       if (!hasExitedState) {
@@ -84,7 +84,7 @@ void connectionStateMachine() {
       if (!hasEnteredState) {
         hasEnteredState = true;
         connectWifi();
-        connectionTimer = 50;
+        connectionTimer = 200;
         Serial.println("CONNECTING_TO_WIFI");
       }
 
@@ -108,13 +108,16 @@ void connectionStateMachine() {
       if (!hasEnteredState) {
         hasEnteredState = true;
         Serial.println("CONNECTED_TO_WIFI");
+        Serial.println(WiFi.localIP());
+        initializeArtnetWiFi();
       }
 
       if (WiFi.status() != WL_CONNECTED) {
         setConnectionState(DISCONNECTED);
+        disableArtnetWiFi();
       }
 
-      if (ethernetConnected()){
+      if (ethernetConnected()) {
         setConnectionState(DISCONNECTED);
         WiFi.disconnect();
       }
@@ -132,12 +135,12 @@ void connectionStateMachine() {
 
 
 void printConnectionStatus() {
-  if (connectedToEthernet) {
+  if (currentState == CONNECTED_TO_ETHERNET) {
     Serial.println("Ethernet: Connected");
   } else {
     Serial.println("Ethernet: Disconnected");
   }
-  if (connectedToWifi) {
+  if (currentState == CONNECTED_TO_WIFI) {
     Serial.println("WiFi: Connected");
   } else {
     Serial.println("WiFi: Disconnected");

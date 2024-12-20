@@ -1,6 +1,6 @@
 
-
-ArtnetReceiver artnet_r;
+ArtnetWiFiReceiver artnet_wifi;
+ArtnetReceiver artnet_eth;
 uint16_t universe1 = 1;  // 0 - 32767
 uint8_t net = 0;         // 0 - 127
 uint8_t subnet = 0;      // 0 - 15
@@ -9,12 +9,40 @@ uint8_t universe2 = 2;   // 0 - 15
 #define MAX_CHANNEL 511
 
 static bool artnetPrintEnable = false;
+static bool artnetWiFiEnabled = false;
+static bool artnetETHEnabled = false;
 
 void initializeArtnet() {
-  artnet_r.begin();
-  artnet_r.subscribeArtDmxUniverse(net, subnet, universe1, callback_universe1);
-  artnet_r.subscribeArtDmxUniverse(net, subnet, universe2, callback_universe2);
+  // artnet_eth.begin();
+  // artnet_eth.subscribeArtDmxUniverse(net, subnet, universe1, callback_universe1);
+  // artnet_eth.subscribeArtDmxUniverse(net, subnet, universe2, callback_universe2);
+  // artnet_wifi.begin();
+  // artnet_wifi.subscribeArtDmxUniverse(net, subnet, universe1, callback_universe1);
+  // artnet_wifi.subscribeArtDmxUniverse(net, subnet, universe2, callback_universe2);
 }
+
+void initializeArtnetETH() {
+  artnet_eth.begin();
+  artnet_eth.subscribeArtDmxUniverse(net, subnet, universe1, callback_universe1);
+  artnet_eth.subscribeArtDmxUniverse(net, subnet, universe2, callback_universe2);
+  artnetETHEnabled = true;
+}
+
+void disableArtnetETH() {
+  artnetETHEnabled = false;
+}
+
+void initializeArtnetWiFi() {
+  artnet_wifi.begin();
+  artnet_wifi.subscribeArtDmxUniverse(net, subnet, universe1, callback_universe1);
+  artnet_wifi.subscribeArtDmxUniverse(net, subnet, universe2, callback_universe2);
+  artnetWiFiEnabled = true;
+}
+
+void disableArtnetWiFi() {
+  artnetWiFiEnabled = false;
+}
+
 
 void callback_universe1(const uint8_t *data, uint16_t size, const ArtDmxMetadata &metadata, const ArtNetRemoteInfo &remote) {
   printArtnetData(data, size, universe1, metadata, remote);
@@ -26,11 +54,7 @@ void callback_universe1(const uint8_t *data, uint16_t size, const ArtDmxMetadata
 
 void callback_universe2(const uint8_t *data, uint16_t size, const ArtDmxMetadata &metadata, const ArtNetRemoteInfo &remote) {
   printArtnetData(data, size, universe2, metadata, remote);
-
-  for (int channel = 0; channel < size; channel++) {
-    writeDMX(data[channel], channel + 1);  //Add one for offset
-  }
-  updateDMX();
+  outputLEDArtnetData(data, size);
 }
 
 void enableArtnetPrint() {
@@ -61,5 +85,10 @@ void printArtnetData(const uint8_t *data, uint16_t size, uint8_t universe, const
 }
 
 void artnetLoop() {
-  artnet_r.parse();
+  if (artnetETHEnabled) {
+    artnet_eth.parse();
+  }
+  if (artnetWiFiEnabled) {
+    artnet_wifi.parse();
+  }
 }

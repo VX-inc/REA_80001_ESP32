@@ -1,9 +1,15 @@
 #include <ArtnetETH.h>
+#include <ArtnetWiFi.h>
 #include <WiFi.h>
 #include <WiFiUdp.h>
 #include "Adafruit_HUSB238.h"
 #include <Wire.h>
+#include <Arduino.h>
 
+
+#define EEPROM_ID_SSID 2
+#define EEPROM_ID_PASSWORD 40
+#define EEPROM_ID_VOLTAGE 0
 // Define states as an enumeration for clarity
 typedef enum {
   DISCONNECTED,
@@ -41,18 +47,20 @@ void setup() {
   initializeDMX();
   initCAN();
   initializeConnectionManager();
+  initializeEEPROM();
 }
 
 void loop() {
   slottedLoop();
-  connectionManagerFastHandler();
 }
 
 //Functions that run once every 100ms
 void Slot_100ms() {
-  refreshStatusLED();
+  psuAutoStart();
+  ledHandler();
   LEDStrip100msHandler();
   connectionManagerSlowHandler();
+  checkCableOrientation();
 }
 
 //Functions that run once every 10ms
@@ -66,4 +74,5 @@ void Slot_10ms() {
 void Slot_EveryLoop() {
   LEDStripHandler();
   DMXLoop();
+  artnetLoop();
 }
