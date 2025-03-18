@@ -21,7 +21,6 @@ void printCommands() {
   Serial.println("5VPO : Turn on 5V LED Power on power up (persists through power cycle)");
   Serial.println("12VPO : Turn on 12V LED Power on power up (persists through power cycle)");
   Serial.println("0VPO : Disables turning on LED Power on start (persists through power cycle)");
-  Serial.println("pd : print the USB-C PD Profile");
   Serial.println("t : Run/Stop Test Pattern on LED Strip (power must be enabled first)");
   Serial.println("scan : Run I2C Scanner");
   Serial.println("d : Write test DMX Packet");
@@ -33,6 +32,7 @@ void printCommands() {
   Serial.println("dfp: Print DFP Voltages");
   Serial.println("wifi: Set WiFi Credentials (persists through power cycle)");
   Serial.println("conn: Force WiFi Connection Attempt");
+  Serial.println("can : toggle printing received CAN messages");
   Serial.println("---------------------------------------------------------------------------");
 }
 
@@ -42,18 +42,18 @@ void runWifiConfig() {
   if (state == 0) {
     Serial.print("SSID Received: ");
     Serial.println(inputString);
-    writeStringToEEPROM(EEPROM_ID_SSID , inputString);
+    writeStringToEEPROM(EEPROM_ID_SSID, inputString);
     Serial.println("Enter Wifi Password.");
   }
   if (state == 1) {
     Serial.print("Password Received: ");
     Serial.println(inputString);
-    writeStringToEEPROM(EEPROM_ID_PASSWORD , inputString);
+    writeStringToEEPROM(EEPROM_ID_PASSWORD, inputString);
     Serial.println("Config Complete.");
   }
 
   state++;
-  if(state == 2){
+  if (state == 2) {
     state = 0;
     wifiConfigEnabled = false;
   }
@@ -109,7 +109,7 @@ void serialParser() {
         setPowerOnState(PSU_POWER_OFF);
         Serial.println("Disabling LED Power On Start");
         validCommand = true;
-      }      
+      }
       if (strcmp(inputString, "t") == 0) {
         testPatternState = !testPatternState;
         Serial.println("Starting/Stopping Test Pattern");
@@ -153,6 +153,11 @@ void serialParser() {
         connectWifi();
         validCommand = true;
       }
+      if (strcmp(inputString, "can") == 0) {
+        toggleCANPrinting();
+        validCommand = true;
+      }
+
 
       if (validCommand == false) {
         Serial.println("Invalid Command");

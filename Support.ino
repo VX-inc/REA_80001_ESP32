@@ -49,14 +49,24 @@ void updateStatusLED(PSUState commandedSupplyState) {
   status_led.show();
 }
 
-void updateCableFlipStatusLED(uint8_t value) {
-  if (value == 0) {
-    status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(0, 0, 0));
-  }
-   if (value == 1) {
+// void updateCableFlipStatusLED(uint8_t value) {
+//   if (value == 0) {
+//     status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(0, 0, 0));
+//   }
+//    if (value == 1) {
+//     status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(20, 0, 0));
+//   } 
+//   if (value == 2) {
+//     status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(0, 20, 0));
+//   }
+//   status_led.show();
+// }
+
+void updateCANStatusLED(bool value) {
+   if (!value) {
     status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(20, 0, 0));
   } 
-  if (value == 2) {
+  if (value) {
     status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(0, 20, 0));
   }
   status_led.show();
@@ -81,5 +91,6 @@ void updateConnectionStatusLED(CONNECTION_ENUM state) {
 void ledHandler(void) {
   updateConnectionStatusLED(getConnectionStatus());
   updateStatusLED(getPSUStatus());
+  updateCANStatusLED(CANDeviceConnected());
   //updatePDStatusLED(PD_SRC_20V);
 }

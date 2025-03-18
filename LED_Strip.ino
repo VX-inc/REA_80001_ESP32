@@ -5,7 +5,7 @@
 #define PIN_LED_DO 21
 #define PIN_LED_CLK 22
 
-#define LED_STRIP_LED_COUNT 60
+#define LED_STRIP_LED_COUNT 90
 
 Adafruit_NeoPixel led_strip(LED_STRIP_LED_COUNT, PIN_LED_DO, NEO_RGB + NEO_KHZ800);
 

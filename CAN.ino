@@ -8,7 +8,7 @@
 
 CanFrame rxFrame;
 
-
+static uint8_t canTimeout = 0;
 
 
 void initCAN() {
@@ -19,14 +19,31 @@ void initCAN() {
   }
 }
 
+static bool printCAN = false;
+
+void toggleCANPrinting() {
+  printCAN = !printCAN;
+  if(printCAN){
+    Serial.println("Printing received CAN messages: Enabled");
+  } else {
+    Serial.println("Printing received CAN messages: Disabled");
+  }
+}
+
+void printCANMessage(uint8_t ident, uint8_t CANMessageType, uint8_t parameter) {
+  if (printCAN) {
+    Serial.println(ident);
+    Serial.println(CANMessageType);
+    Serial.println(parameter);
+  }
+}
+
 void checkCANMessages() {
   if (ESP32Can.readFrame(rxFrame, 0)) {
     uint8_t ident = rxFrame.identifier;
     uint8_t CANMessageType = rxFrame.data[0];
     uint8_t parameter = rxFrame.data[1];
-    // Serial.println(ident);
-    // Serial.println(CANMessageType);
-    // Serial.println(parameter);
+    printCANMessage(ident,CANMessageType,parameter);
     if (ident == CAN_IDENTIFIER) {
       if (CANMessageType == CAN_PSU_VOLTAGE) {
         if (parameter > 0 && parameter <= PSU_5V) {
@@ -42,7 +59,24 @@ void checkCANMessages() {
       if (CANMessageType == CAN_PSU_STATUS) {
         receivedPSUStatus((PSUState)rxFrame.data[1],(PSUStatus)rxFrame.data[2]);
       }
+      if (CANMessageType == CAN_PING) {
+        canTimeout = 10;
+      }
     }
+  }
+}
+
+void CANConnectionHandler() {
+  if (canTimeout != 0){
+    canTimeout--;
+  }
+}
+
+bool CANDeviceConnected() {
+  if (canTimeout != 0){
+    return true;
+  } else {
+    return false;
   }
 }
 

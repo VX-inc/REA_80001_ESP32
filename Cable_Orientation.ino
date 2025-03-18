@@ -22,23 +22,23 @@ float averageAnalogPinA1(void) {
   return analogAverage / 100.0;
 }
 
-void checkCableOrientation() {
-  static uint8_t count = 0;
-  if (count > 10) {
-    float CC1 = averageAnalogPinA0();
-    float CC2 = averageAnalogPinA1();
+// void checkCableOrientation() {
+//   static uint8_t count = 0;
+//   if (count > 10) {
+//     float CC1 = averageAnalogPinA0();
+//     float CC2 = averageAnalogPinA1();
 
-    if (CC1 < 1000) {
-      updateCableFlipStatusLED(1);
-    } else {
-      if (CC2 < 1000) {
-        updateCableFlipStatusLED(2);
-      } else {
-        updateCableFlipStatusLED(0);
-      }
-    }
+//     if (CC1 < 1000) {
+//       updateCableFlipStatusLED(1);
+//     } else {
+//       if (CC2 < 1000) {
+//         updateCableFlipStatusLED(2);
+//       } else {
+//         updateCableFlipStatusLED(0);
+//       }
+//     }
 
-    count = 0;
-  }
-  count++;
-}
+//     count = 0;
+//   }
+//   count++;
+// }

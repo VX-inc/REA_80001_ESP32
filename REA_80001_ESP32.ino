@@ -37,7 +37,8 @@ enum CANDataType {
   CAN_CURRENT_ZERO_REQUEST = 4,
   CAN_CURRENT_DATA = 5,
   CAN_PSU_STATUS = 6,
-  CAN_PSU_TEST_VOLTAGE = 7
+  CAN_PSU_TEST_VOLTAGE = 7,
+  CAN_PING = 8
 };
 
 void setup() {
@@ -60,7 +61,8 @@ void Slot_100ms() {
   ledHandler();
   LEDStrip100msHandler();
   connectionManagerSlowHandler();
-  checkCableOrientation();
+  //checkCableOrientation();
+  CANConnectionHandler();
 }
 
 //Functions that run once every 10ms
