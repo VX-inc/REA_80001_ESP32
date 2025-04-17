@@ -6,10 +6,11 @@
 #include <Wire.h>
 #include <Arduino.h>
 
-
 #define EEPROM_ID_SSID 2
 #define EEPROM_ID_PASSWORD 40
 #define EEPROM_ID_VOLTAGE 0
+
+uint8_t verboseLevel = 2; 
 // Define states as an enumeration for clarity
 typedef enum {
   DISCONNECTED,

@@ -71,6 +71,13 @@ PSUState psuReceivedState = PSU_POWER_OFF;
 PSUStatus psuReceivedStatus = PSU_OK;
 
 void receivedPSUStatus(PSUState state, PSUStatus status) {
+  if (verboseLevel >= 1) {
+    Serial.print("Received PSU Status: ");
+    Serial.print("State: ");
+    Serial.print(state);
+    Serial.print(" Status: ");
+    Serial.println(status);
+  }
   psuReceivedState = state;
   psuReceivedStatus = status;
   PSUStatusReceived = true;
@@ -136,7 +143,7 @@ void AutoVoltageDetect() {
           autoDetectStart = false;
           voltageAttempt = PSU_5V;
           loopDelay = 1;
-          Serial.println("State: AD_START");
+          if (verboseLevel >= 1) Serial.println("State: AD_START");
         }
         break;
 
@@ -145,12 +152,12 @@ void AutoVoltageDetect() {
           autoDetectState = AD_ENABLE_POWER;
           sendVoltageCommand(voltageAttempt);
           clearLEDStripActive = true;
-          Serial.println("State: AD_ENABLE_POWER");
+          if (verboseLevel >= 2) Serial.println("State: AD_ENABLE_POWER");
           if (voltageAttempt == PSU_5V) {
-            Serial.println("Turing on 5V supply");
+            if (verboseLevel >= 2) Serial.println("Turing on 5V supply");
           }
           if (voltageAttempt == PSU_12V) {
-            Serial.println("Turing on 12V supply");
+            if (verboseLevel >= 2) Serial.println("Turing on 12V supply");
           }
         }
         break;
@@ -158,7 +165,7 @@ void AutoVoltageDetect() {
       case AD_ENABLE_POWER:
         if (PSUStatusReceived) {
           autoDetectState = AD_TESTSHORT;
-          Serial.println("State: AD_TESTSHORT");
+          if (verboseLevel >= 2) Serial.println("State: AD_TESTSHORT");
           loopDelay = 5;
         }
         break;
@@ -167,24 +174,24 @@ void AutoVoltageDetect() {
         clearLEDStripActive = false;
         sendZeroCurrentCommand();
         autoDetectState = AD_ZERO_CURRENT;
-        Serial.println("State: AD_ZERO_CURRENT");
-        Serial.println("Zeroing current measurement");
+        if (verboseLevel >= 2) Serial.println("State: AD_ZERO_CURRENT");
+        if (verboseLevel >= 2) Serial.println("Zeroing current measurement");
         break;
 
       case AD_ZERO_CURRENT:
         if (currentRequestReturned()) {
           autoDetectState = AD_COMMAND_STRIP;
-          Serial.println("State: AD_COMMAND_STRIP");
+          if (verboseLevel >= 2) Serial.println("State: AD_COMMAND_STRIP");
           loopDelay = 5;
           testLEDStripActive = true;
-          Serial.println("Measuring current");
+          if (verboseLevel >= 2) Serial.println("Measuring current");
         }
         break;
 
       case AD_COMMAND_STRIP:
         sendCurrentMeasureCommand();
         autoDetectState = AD_MEASURE_CURRENT;
-        Serial.println("State: AD_MEASURE_CURRENT");
+        if (verboseLevel >= 2) Serial.println("State: AD_MEASURE_CURRENT");
         break;
 
       case AD_MEASURE_CURRENT:
@@ -196,8 +203,8 @@ void AutoVoltageDetect() {
             Serial.println("State: AD_COMPLETE");
           } else {
             if (voltageAttempt == PSU_5V) {
-              Serial.println("Strip not detected at 5V");
-              voltageAttempt = PSU_12V;
+              if (verboseLevel >= 1) Serial.println("Strip not detected at 5V");
+              //voltageAttempt = PSU_12V;
               testLEDStripActive = false;
               autoDetectState = AD_START;
               sendVoltageCommand(PSU_POWER_OFF);
@@ -222,7 +229,7 @@ void AutoVoltageDetect() {
         break;
 
       case AD_FAIL:
-        Serial.println("State: AD_FAIL");
+        if (verboseLevel >= 2) Serial.println("State: AD_FAIL");
         autoDetectState = AD_IDLE;
         sendVoltageCommand(PSU_POWER_OFF);
         testLEDStripActive = false;
@@ -230,7 +237,7 @@ void AutoVoltageDetect() {
         break;
 
       default:
-        Serial.println("Unknown State");
+        if (verboseLevel >= 2) Serial.println("Unknown State");
         break;
     }
   } else {
@@ -239,7 +246,7 @@ void AutoVoltageDetect() {
 }
 
 void sendCurrentMeasureCommand() {
-  Serial.println("Sending Current Measure Command");
+  if (verboseLevel >= 2) Serial.println("Sending Current Measure Command");
   CanFrame txFrame = { 0 };
   txFrame.identifier = CAN_IDENTIFIER;
   txFrame.extd = 0;
@@ -256,7 +263,7 @@ void sendCurrentMeasureCommand() {
 }
 
 void sendZeroCurrentCommand() {
-  Serial.println("Sending Zero Current Command");
+  if (verboseLevel >= 2) Serial.println("Sending Zero Current Command");
   CanFrame txFrame = { 0 };
   txFrame.identifier = CAN_IDENTIFIER;
   txFrame.extd = 0;

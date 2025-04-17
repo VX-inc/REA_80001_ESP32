@@ -79,10 +79,11 @@ void serialParser() {
         validCommand = true;
       }
       if (strcmp(inputString, "20V") == 0) {
-        //setVoltage(PSU_20V);
-        sendVoltageCommand(PSU_POWER_OFF);
-        Serial.println("20V Mode Currently Disabled");
-        Serial.println("Turning off LED Power");
+        sendVoltageCommand(PSU_20V);
+        //sendVoltageCommand(PSU_POWER_OFF);
+        //Serial.println("20V Mode Currently Disabled");
+        //Serial.println("Turning off LED Power");
+        Serial.println("Turning on 20V LED Power");
         validCommand = true;
       }
       if (strcmp(inputString, "12V") == 0) {
@@ -112,7 +113,11 @@ void serialParser() {
       }
       if (strcmp(inputString, "t") == 0) {
         testPatternState = !testPatternState;
-        Serial.println("Starting/Stopping Test Pattern");
+        if (testPatternState) {
+          Serial.println("Starting Test Pattern");
+        } else {
+          Serial.println("Stopping Test Pattern");
+        }
         validCommand = true;
       }
       if (strcmp(inputString, "d") == 0) {
