@@ -71,7 +71,7 @@ PSUState psuReceivedState = PSU_POWER_OFF;
 PSUStatus psuReceivedStatus = PSU_OK;
 
 void receivedPSUStatus(PSUState state, PSUStatus status) {
-  if (verboseLevel >= 1) {
+  if (verboseLevel >= 2) {
     Serial.print("Received PSU Status: ");
     Serial.print("State: ");
     Serial.print(state);
@@ -278,7 +278,6 @@ void sendZeroCurrentCommand() {
   txFrame.data[7] = CAN_STUFFING_FRAME;
   ESP32Can.writeFrame(txFrame, 0);
 }
-
 
 void clearLEDStrip() {
   led_strip.clear();

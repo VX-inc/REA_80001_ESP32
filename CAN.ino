@@ -23,7 +23,7 @@ static bool printCAN = false;
 
 void toggleCANPrinting() {
   printCAN = !printCAN;
-  if(printCAN){
+  if (printCAN) {
     Serial.println("Printing received CAN messages: Enabled");
   } else {
     Serial.println("Printing received CAN messages: Disabled");
@@ -43,7 +43,7 @@ void checkCANMessages() {
     uint8_t ident = rxFrame.identifier;
     uint8_t CANMessageType = rxFrame.data[0];
     uint8_t parameter = rxFrame.data[1];
-    printCANMessage(ident,CANMessageType,parameter);
+    printCANMessage(ident, CANMessageType, parameter);
     if (ident == CAN_IDENTIFIER) {
       if (CANMessageType == CAN_PSU_VOLTAGE) {
         if (parameter > 0 && parameter <= PSU_5V) {
@@ -54,10 +54,13 @@ void checkCANMessages() {
         toggleTestPattern();
       }
       if (CANMessageType == CAN_CURRENT_DATA) {
-        receivedCurrentValue(rxFrame.data[1],rxFrame.data[2]);
+        receivedCurrentValue(rxFrame.data[1], rxFrame.data[2]);
       }
       if (CANMessageType == CAN_PSU_STATUS) {
-        receivedPSUStatus((PSUState)rxFrame.data[1],(PSUStatus)rxFrame.data[2]);
+        receivedPSUStatus((PSUState)rxFrame.data[1], (PSUStatus)rxFrame.data[2]);
+      }
+      if (CANMessageType == CAN_POLARITY_CHECK_DATA) {
+        receivedPolarityStatus((PolarityDetectType)rxFrame.data[1]);
       }
       if (CANMessageType == CAN_PING) {
         canTimeout = 10;
@@ -67,23 +70,23 @@ void checkCANMessages() {
 }
 
 void CANConnectionHandler() {
-  if (canTimeout != 0){
+  if (canTimeout != 0) {
     canTimeout--;
   }
 }
 
 bool CANDeviceConnected() {
-  if (canTimeout != 0){
+  if (canTimeout != 0) {
     return true;
   } else {
     return false;
   }
 }
 
-void receivedCurrentValue(uint8_t highByte, uint8_t lowByte){
+void receivedCurrentValue(uint8_t highByte, uint8_t lowByte) {
   uint16_t reassembledValue = (highByte << 8) | lowByte;
-  float currentValue = ((float)reassembledValue)/1000.0;
+  float currentValue = ((float)reassembledValue) / 1000.0;
   Serial.print("Current Received: ");
-  Serial.println(currentValue,3);
+  Serial.println(currentValue, 3);
   receivedCurrentMeasurement(currentValue);
 }

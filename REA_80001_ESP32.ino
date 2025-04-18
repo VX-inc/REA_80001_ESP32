@@ -10,7 +10,7 @@
 #define EEPROM_ID_PASSWORD 40
 #define EEPROM_ID_VOLTAGE 0
 
-uint8_t verboseLevel = 2; 
+uint8_t verboseLevel = 1; 
 // Define states as an enumeration for clarity
 typedef enum {
   DISCONNECTED,
@@ -38,8 +38,17 @@ enum CANDataType {
   CAN_CURRENT_ZERO_REQUEST = 4,
   CAN_CURRENT_DATA = 5,
   CAN_PSU_STATUS = 6,
-  CAN_PSU_TEST_VOLTAGE = 7,
-  CAN_PING = 8
+  CAN_OUTPUT_POLARITY = 7,
+  CAN_PING = 8,
+  CAN_RUN_POLARITY_CHECK = 9,
+  CAN_POLARITY_CHECK_DATA = 10
+};
+
+enum PolarityDetectType {
+  POLARITY_NO_DETECT,
+  POLARITY_FORWARD,
+  POLARITY_REVERSE,
+  POLARITY_SHORTED
 };
 
 void setup() {

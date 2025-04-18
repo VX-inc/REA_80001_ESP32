@@ -22,6 +22,7 @@ void printCommands() {
   Serial.println("12VPO : Turn on 12V LED Power on power up (persists through power cycle)");
   Serial.println("0VPO : Disables turning on LED Power on start (persists through power cycle)");
   Serial.println("t : Run/Stop Test Pattern on LED Strip (power must be enabled first)");
+  Serial.println("det : Run full polarity detection");
   Serial.println("scan : Run I2C Scanner");
   Serial.println("d : Write test DMX Packet");
   Serial.println("r : Toggle DMX Packet Reading");
@@ -109,6 +110,11 @@ void serialParser() {
       if (strcmp(inputString, "0VPO") == 0) {
         setPowerOnState(PSU_POWER_OFF);
         Serial.println("Disabling LED Power On Start");
+        validCommand = true;
+      }
+      if (strcmp(inputString, "det") == 0) {
+        Serial.println("Detecting Polarity");
+        sendPolarityCheckCommand();
         validCommand = true;
       }
       if (strcmp(inputString, "t") == 0) {
