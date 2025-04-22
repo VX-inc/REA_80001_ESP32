@@ -34,6 +34,7 @@ void printCommands() {
   Serial.println("wifi: Set WiFi Credentials (persists through power cycle)");
   Serial.println("conn: Force WiFi Connection Attempt");
   Serial.println("can : toggle printing received CAN messages");
+  Serial.println("verb : increase to the max print verbosity");
   Serial.println("---------------------------------------------------------------------------");
 }
 
@@ -166,6 +167,10 @@ void serialParser() {
       }
       if (strcmp(inputString, "can") == 0) {
         toggleCANPrinting();
+        validCommand = true;
+      }
+      if (strcmp(inputString, "verb") == 0) {
+        verboseLevel = 2;
         validCommand = true;
       }
 

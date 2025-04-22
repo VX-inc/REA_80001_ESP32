@@ -86,7 +86,7 @@ bool CANDeviceConnected() {
 void receivedCurrentValue(uint8_t highByte, uint8_t lowByte) {
   uint16_t reassembledValue = (highByte << 8) | lowByte;
   float currentValue = ((float)reassembledValue) / 1000.0;
-  Serial.print("Current Received: ");
-  Serial.println(currentValue, 3);
+  if (verboseLevel >= 2) Serial.print("Current Received: ");
+  if (verboseLevel >= 2) Serial.println(currentValue, 3);
   receivedCurrentMeasurement(currentValue);
 }

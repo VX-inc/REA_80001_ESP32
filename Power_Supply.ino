@@ -1,9 +1,10 @@
 
-
+PolarityDetectType polarityStatusReceived = POLARITY_DETECT_NOT_RUN;
 PSUState psuState = PSU_POWER_OFF;
 
 void sendVoltageCommand(PSUState voltageState) {
   //Serial.println("Sending Supply Voltage CAN Message.");
+  clearPSUStatusReceived();
   updatePowerState(voltageState);
   CanFrame txFrame = { 0 };
   txFrame.identifier = CAN_IDENTIFIER;
@@ -55,27 +56,33 @@ void setPowerOnState(PSUState state) {
   }
 }
 
+PolarityDetectType getPolarityDetectState () {
+  return polarityStatusReceived;
+}
+
 void receivedPolarityStatus(PolarityDetectType polarityStatus) {
+  polarityStatusReceived = polarityStatus;
   switch (polarityStatus) {
     case POLARITY_NO_DETECT:
-      Serial.println("No polarity detected.");
+      if (verboseLevel >= 1) Serial.println("No strip detected.");
       break;
     case POLARITY_FORWARD:
-      Serial.println("Forward polarity detected.");
+      if (verboseLevel >= 1) Serial.println("Forward polarity detected.");
       break;
     case POLARITY_REVERSE:
-      Serial.println("Reverse polarity detected.");
+      if (verboseLevel >= 1) Serial.println("Reverse polarity detected.");
       break;
     case POLARITY_SHORTED:
-      Serial.println("Polarity shorted.");
+      if (verboseLevel >= 1) Serial.println("Output appears shorted.");
       break;
     default:
-      Serial.println("Unknown polarity state.");
+      if (verboseLevel >= 1) Serial.println("Unknown polarity state.");
       break;
   }
 }
 
 void sendPolarityCheckCommand() {
+  polarityStatusReceived = POLARITY_DETECT_NOT_RUN;
   if (verboseLevel >= 2) Serial.println("Sending Polarity Check Command");
   CanFrame txFrame = { 0 };
   txFrame.identifier = CAN_IDENTIFIER;
