@@ -12,6 +12,10 @@ void initializeSerial() {
 
 void printCommands() {
   Serial.println("---------------------------------------------------------------------------");
+  Serial.print("REA_80001_ESP32 Hardware Tester, Version: ");
+  Serial.print(FW_VERSION);
+  Serial.print(" , Build Date: ");
+  Serial.println(__DATE__);
   Serial.println("The test commands are as follows:");
   Serial.println("ip : Print Network Status");
   Serial.println("0 : Turn off LED Power Supply");
@@ -22,7 +26,6 @@ void printCommands() {
   Serial.println("12VPO : Turn on 12V LED Power on power up (persists through power cycle)");
   Serial.println("0VPO : Disables turning on LED Power on start (persists through power cycle)");
   Serial.println("t : Run/Stop Test Pattern on LED Strip (power must be enabled first)");
-  Serial.println("det : Run full polarity detection");
   Serial.println("scan : Run I2C Scanner");
   Serial.println("d : Write test DMX Packet");
   Serial.println("r : Toggle DMX Packet Reading");
@@ -113,9 +116,19 @@ void serialParser() {
         Serial.println("Disabling LED Power On Start");
         validCommand = true;
       }
-      if (strcmp(inputString, "det") == 0) {
-        Serial.println("Detecting Polarity");
-        sendPolarityCheckCommand();
+      if (strcmp(inputString, "po") == 0) {
+        sendFullBridgeCommand(FULL_BRIDGE_POSITIVE);
+        Serial.println("Sending Full Bridge Positive Command.");
+        validCommand = true;
+      }
+      if (strcmp(inputString, "rv") == 0) {
+        sendFullBridgeCommand(FULL_BRIDGE_NEGATIVE);
+        Serial.println("Sending Full Bridge Negative Command.");
+        validCommand = true;
+      }
+      if (strcmp(inputString, "off") == 0) {
+        sendFullBridgeCommand(FULL_BRIDGE_OFF);
+        Serial.println("Sending Full Bridge Off Command.");
         validCommand = true;
       }
       if (strcmp(inputString, "t") == 0) {

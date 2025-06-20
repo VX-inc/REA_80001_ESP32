@@ -21,6 +21,22 @@ void sendVoltageCommand(PSUState voltageState) {
   ESP32Can.writeFrame(txFrame, 0);
 }
 
+void sendFullBridgeCommand(FullBridgeType fullBridgeState) {
+  CanFrame txFrame = { 0 };
+  txFrame.identifier = CAN_IDENTIFIER;
+  txFrame.extd = 0;
+  txFrame.data_length_code = 8;
+  txFrame.data[0] = CAN_SET_FULL_BRIDGE;
+  txFrame.data[1] = fullBridgeState;
+  txFrame.data[2] = CAN_STUFFING_FRAME;
+  txFrame.data[3] = CAN_STUFFING_FRAME;
+  txFrame.data[4] = CAN_STUFFING_FRAME;
+  txFrame.data[5] = CAN_STUFFING_FRAME;
+  txFrame.data[6] = CAN_STUFFING_FRAME;
+  txFrame.data[7] = CAN_STUFFING_FRAME;
+  ESP32Can.writeFrame(txFrame, 0);
+}
+
 void updatePowerState(PSUState commandedSupplyState) {
   updateStatusLED(commandedSupplyState);
   psuState = commandedSupplyState;
@@ -64,24 +80,24 @@ void receivedPolarityStatus(PolarityDetectType polarityStatus) {
   polarityStatusReceived = polarityStatus;
   switch (polarityStatus) {
     case POLARITY_NO_DETECT:
-      if (verboseLevel >= 1) Serial.println("No strip detected.");
+      if (verboseLevel >= 2) Serial.println("No current detected.");
       break;
     case POLARITY_FORWARD:
-      if (verboseLevel >= 1) Serial.println("Forward polarity detected.");
+      if (verboseLevel >= 2) Serial.println("Forward polarity detected.");
       break;
     case POLARITY_REVERSE:
-      if (verboseLevel >= 1) Serial.println("Reverse polarity detected.");
+      if (verboseLevel >= 2) Serial.println("Reverse polarity detected.");
       break;
     case POLARITY_SHORTED:
-      if (verboseLevel >= 1) Serial.println("Output appears shorted.");
+      if (verboseLevel >= 2) Serial.println("Output appears shorted.");
       break;
     default:
-      if (verboseLevel >= 1) Serial.println("Unknown polarity state.");
+      if (verboseLevel >= 2) Serial.println("Unknown polarity state.");
       break;
   }
 }
 
-void sendPolarityCheckCommand() {
+void sendPolarityCheckCommand(PSUState psu_state, PolarityDetectType polarity) {
   polarityStatusReceived = POLARITY_DETECT_NOT_RUN;
   if (verboseLevel >= 2) Serial.println("Sending Polarity Check Command");
   CanFrame txFrame = { 0 };
@@ -89,8 +105,8 @@ void sendPolarityCheckCommand() {
   txFrame.extd = 0;
   txFrame.data_length_code = 8;
   txFrame.data[0] = CAN_RUN_POLARITY_CHECK;
-  txFrame.data[1] = CAN_STUFFING_FRAME;
-  txFrame.data[2] = CAN_STUFFING_FRAME;
+  txFrame.data[1] = psu_state;
+  txFrame.data[2] = polarity;
   txFrame.data[3] = CAN_STUFFING_FRAME;
   txFrame.data[4] = CAN_STUFFING_FRAME;
   txFrame.data[5] = CAN_STUFFING_FRAME;

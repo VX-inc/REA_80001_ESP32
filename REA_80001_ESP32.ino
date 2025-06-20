@@ -10,6 +10,8 @@
 #define EEPROM_ID_PASSWORD 40
 #define EEPROM_ID_VOLTAGE 0
 
+#define FW_VERSION "1.0"
+
 uint8_t verboseLevel = 1; 
 // Define states as an enumeration for clarity
 typedef enum {
@@ -41,7 +43,8 @@ enum CANDataType {
   CAN_OUTPUT_POLARITY = 7,
   CAN_PING = 8,
   CAN_RUN_POLARITY_CHECK = 9,
-  CAN_POLARITY_CHECK_DATA = 10
+  CAN_POLARITY_CHECK_DATA = 10,
+  CAN_SET_FULL_BRIDGE = 11
 };
 
 enum PolarityDetectType {
@@ -50,6 +53,12 @@ enum PolarityDetectType {
   POLARITY_FORWARD,
   POLARITY_REVERSE,
   POLARITY_SHORTED
+};
+
+enum FullBridgeType {
+  FULL_BRIDGE_OFF,
+  FULL_BRIDGE_POSITIVE,
+  FULL_BRIDGE_NEGATIVE
 };
 
 void setup() {

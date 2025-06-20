@@ -7,6 +7,8 @@
 
 #define LED_STRIP_LED_COUNT 90
 
+#define AD_TIMEOUT 1000
+
 Adafruit_NeoPixel led_strip(LED_STRIP_LED_COUNT, PIN_LED_DO, NEO_RGB + NEO_KHZ800);
 
 unsigned long patternInterval = 20;               // time between steps in the pattern
@@ -18,6 +20,8 @@ bool autoDetectStart = false;
 enum AutoDetectStateType {
   AD_IDLE,
   AD_START,
+  AD_INCREMENT_TEST,
+  AD_COMMAND_POLARITY,
   AD_DETECT_POLARITY,
   AD_ENABLE_POWER,
   AD_TESTSHORT,
@@ -32,7 +36,6 @@ AutoDetectStateType autoDetectState = AD_IDLE;
 bool testPatternState = false;
 bool clearLEDStripActive = false;
 bool testLEDStripActive = false;
-
 
 void toggleTestPattern() {
   testPatternState = !testPatternState;
@@ -108,29 +111,12 @@ float getCurrentValue() {
   return currentValue;
 }
 
-
-
-//Disable Supply, check for response
-//Enable 5V
-//Command off strip
-//Zero Current measurement
-//Wait 100ms
-//Command on strip
-//Measure current
-//Check if a 5V strip
-//If not enable 12V
-//Check if above 500mA, error if true
-//Command off strip
-//Zero current measurement
-//Wait 100ms
-//Command on strip
-//Measure current
-//Check if a 12V strip
-#define AD_TIMEOUT 60
 void AutoVoltageDetect() {
   static uint8_t loopDelay = 0;
   static uint8_t timeout = AD_TIMEOUT;
   static PSUState voltageAttempt = PSU_5V;
+  static PolarityDetectType polarity = POLARITY_DETECT_NOT_RUN;
+  static PolarityDetectType incorrectPolarity = POLARITY_DETECT_NOT_RUN;
   if (autoDetectState != AD_IDLE && autoDetectState != AD_FAIL) {
     if (timeout == 0) {
       autoDetectState = AD_FAIL;
@@ -144,7 +130,7 @@ void AutoVoltageDetect() {
     switch (autoDetectState) {
       case AD_IDLE:
         if (autoDetectStart) {
-          autoDetectState = AD_DETECT_POLARITY;
+          autoDetectState = AD_COMMAND_POLARITY;
           sendVoltageCommand(PSU_POWER_OFF);
           timeout = AD_TIMEOUT;
           autoDetectStart = false;
@@ -152,31 +138,101 @@ void AutoVoltageDetect() {
           loopDelay = 1;
           testLEDStripActive = false;
           clearLEDStripActive = false;
+          polarity = POLARITY_FORWARD;
+          incorrectPolarity = POLARITY_DETECT_NOT_RUN;
           if (verboseLevel >= 1) Serial.println("State: AD_START");
-          sendPolarityCheckCommand();
-          if (verboseLevel >= 1) Serial.println("Checking Polarity.");
+
+          if (verboseLevel >= 1) Serial.println("Testing 5V Forward Polarity");
         }
         break;
 
+      case AD_INCREMENT_TEST:
+        if (voltageAttempt == PSU_5V) {
+          if (polarity == POLARITY_FORWARD) {
+            polarity = POLARITY_REVERSE;
+            if (verboseLevel >= 1) Serial.println("Testing 5V Reverse Polarity");
+          } else {
+            if (polarity == POLARITY_REVERSE) {
+              polarity = POLARITY_FORWARD;
+              voltageAttempt = PSU_12V;
+              if (verboseLevel >= 1) Serial.println("Testing 12V Forward Polarity");
+            }
+          }
+        } else {
+          if (voltageAttempt == PSU_12V) {
+            if (polarity == POLARITY_FORWARD) {
+              polarity = POLARITY_REVERSE;
+              if (verboseLevel >= 1) Serial.println("Testing 12V Reverse Polarity");
+            } else {
+              if (polarity == POLARITY_REVERSE) {
+                polarity = POLARITY_FORWARD;
+                //autoDetectState = AD_FAIL;
+                voltageAttempt = PSU_20V;
+                if (verboseLevel >= 1) Serial.println("Testing 20V Forward Polarity");
+              }
+            }
+          } else {
+            if (voltageAttempt == PSU_20V) {
+              if (polarity == POLARITY_FORWARD) {
+                polarity = POLARITY_REVERSE;
+                if (verboseLevel >= 1) Serial.println("Testing 20V Reverse Polarity");
+              } else {
+                if (polarity == POLARITY_REVERSE) {
+                  autoDetectState = AD_FAIL;
+                  if (verboseLevel >= 1) Serial.println("Ran all test cases with no strip detected.");
+                }
+              }
+            }
+          }
+        }
+        if (autoDetectState != AD_FAIL) {
+          if (polarity == incorrectPolarity) {
+            autoDetectState = AD_INCREMENT_TEST;
+          } else {
+            autoDetectState = AD_COMMAND_POLARITY;
+          }
+        }
+        break;
+
+      case AD_COMMAND_POLARITY:
+        sendPolarityCheckCommand(voltageAttempt, polarity);
+        clearLEDStripActive = true;
+        autoDetectState = AD_DETECT_POLARITY;
+        break;
+
+
       case AD_DETECT_POLARITY:
-        if (getPolarityDetectState() == POLARITY_FORWARD || getPolarityDetectState() == POLARITY_REVERSE) {
-          if (verboseLevel >= 2) Serial.println("Strip polarity detected.");
+        if (getPolarityDetectState() == POLARITY_NO_DETECT) {
+          if (verboseLevel >= 2) Serial.println("No Current detected.");
           autoDetectState = AD_START;
           loopDelay = 3;
           sendVoltageCommand(PSU_POWER_OFF);
           PSUStatusReceived = false;
         }
-        if (getPolarityDetectState() == POLARITY_SHORTED || getPolarityDetectState() == POLARITY_NO_DETECT) {
-          if (verboseLevel >= 2) Serial.println("Strip polarity not supported.");
-          autoDetectState = AD_FAIL;
+
+        if (getPolarityDetectState() == POLARITY_SHORTED) {
+          if (verboseLevel >= 2) Serial.println("Current detected.");
+          if (polarity == POLARITY_REVERSE && incorrectPolarity == POLARITY_FORWARD) {
+            autoDetectState = AD_FAIL;
+            Serial.println("Output Completely Shorted");
+          }
+          if (polarity == POLARITY_FORWARD) {
+            incorrectPolarity = POLARITY_FORWARD;
+          }
+          if (polarity == POLARITY_REVERSE) {
+            incorrectPolarity = POLARITY_REVERSE;
+          }
+
+          autoDetectState = AD_INCREMENT_TEST;
         }
+
+
         break;
 
       case AD_START:
         if (PSUStatusReceived && loopDelay == 0) {
           autoDetectState = AD_ENABLE_POWER;
           sendVoltageCommand(voltageAttempt);
-          clearLEDStripActive = true;
           if (verboseLevel >= 2) Serial.println("State: AD_ENABLE_POWER");
           if (voltageAttempt == PSU_5V) {
             if (verboseLevel >= 2) Serial.println("Turing on 5V supply");
@@ -189,6 +245,12 @@ void AutoVoltageDetect() {
 
       case AD_ENABLE_POWER:
         if (PSUStatusReceived) {
+          if (polarity == POLARITY_FORWARD) {
+            sendFullBridgeCommand(FULL_BRIDGE_POSITIVE);
+          }
+          if (polarity == POLARITY_REVERSE) {
+            sendFullBridgeCommand(FULL_BRIDGE_NEGATIVE);
+          }
           autoDetectState = AD_TESTSHORT;
           if (verboseLevel >= 2) Serial.println("State: AD_TESTSHORT");
           loopDelay = 5;
@@ -227,41 +289,32 @@ void AutoVoltageDetect() {
             testLEDStripActive = false;
             clearLEDStripActive = true;
             autoDetectState = AD_COMPLETE;
-            Serial.println("State: AD_COMPLETE");
-            sendVoltageCommand(PSU_POWER_OFF);
+            if (verboseLevel >= 2) Serial.println("State: AD_COMPLETE");
           } else {
-            if (voltageAttempt == PSU_5V) {
-              if (verboseLevel >= 1) Serial.println("Strip not detected at 5V");
-              voltageAttempt = PSU_12V;
-              testLEDStripActive = false;
-              autoDetectState = AD_START;
-              sendVoltageCommand(PSU_POWER_OFF);
-            } else {
-            if (voltageAttempt == PSU_12V) {
-              if (verboseLevel >= 1) Serial.println("Strip not detected at 12V");
-              voltageAttempt = PSU_20V;
-              testLEDStripActive = false;
-              autoDetectState = AD_START;
-              sendVoltageCommand(PSU_POWER_OFF);
-            } else {
-              autoDetectState = AD_FAIL;
-              testLEDStripActive = false;
-              Serial.println("No LED Strip Detected");
-            }
-            }
+            if (verboseLevel >= 1) Serial.println("Strip did not respond to commands");
+            testLEDStripActive = false;
+            autoDetectState = AD_INCREMENT_TEST;
           }
+          sendVoltageCommand(PSU_POWER_OFF);
+          sendFullBridgeCommand(FULL_BRIDGE_OFF);
         }
         break;
 
       case AD_COMPLETE:
         if (voltageAttempt == PSU_5V) {
-          Serial.println("5V Strip Detected");
+          Serial.print("5V Strip Detected ");
         }
         if (voltageAttempt == PSU_12V) {
-          Serial.println("12V Strip Detected");
+          Serial.print("12V Strip Detected ");
         }
         if (voltageAttempt == PSU_20V) {
-          Serial.println("20V Strip Detected");
+          Serial.print("20V Strip Detected ");
+        }
+        if (polarity == POLARITY_FORWARD) {
+          Serial.println("Forward Polarity");
+        }
+        if (polarity == POLARITY_REVERSE) {
+          Serial.println("Reverse Polarity");
         }
         clearLEDStripActive = false;
         autoDetectState = AD_IDLE;
@@ -273,6 +326,7 @@ void AutoVoltageDetect() {
         sendVoltageCommand(PSU_POWER_OFF);
         testLEDStripActive = false;
         clearLEDStripActive = false;
+        if (verboseLevel >= 1) Serial.println("Exiting Auto Voltage Detect.");
         break;
 
       default:
@@ -451,3 +505,301 @@ uint32_t Wheel(byte WheelPos) {
   WheelPos -= 170;
   return led_strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
 }
+
+/*
+enum VOLTAGE_POLARITY_DETECT_STATE {
+  VP_IDLE,
+  VP_POSITIVE_POLARITY,
+  VP_REVERSE_POLARITY,
+  VP_COMMAND_ON_LEDS,
+  VP_INCREASE_VOLTAGE,
+  VP_SUCCESS,
+  VP_SHORT,
+  VP_NO_STRIP
+};
+*/
+
+
+// if (getPolarityDetectState() == POLARITY_FORWARD || getPolarityDetectState() == POLARITY_REVERSE) {
+//   if (verboseLevel >= 2) Serial.println("Strip polarity detected.");
+//   autoDetectState = AD_START;
+//   loopDelay = 3;
+//   sendVoltageCommand(PSU_POWER_OFF);
+//   PSUStatusReceived = false;
+// }
+// if (getPolarityDetectState() == POLARITY_SHORTED || getPolarityDetectState() == POLARITY_NO_DETECT) {
+//   if (verboseLevel >= 2) Serial.println("Strip polarity not supported.");
+//   autoDetectState = AD_FAIL;
+// }
+
+/*
+void runVoltagePolarityDetectStateMachine() {
+  // Static persistent state variables
+  static VOLTAGE_POLARITY_DETECT_STATE currentState = VP_IDLE;
+  static VOLTAGE_POLARITY_DETECT_STATE previousState = VP_IDLE;
+
+  bool stateChanged = (currentState != previousState);
+
+  switch (currentState) {
+    case VP_IDLE:
+      if (stateChanged) {
+        Serial.println("Entering IDLE");
+        // Any necessary initialization or resets
+      }
+      if (detectPolarityCommanded()) {
+        currentState = VP_POSITIVE_POLARITY;
+      }
+      break;
+
+    case VP_POSITIVE_POLARITY:
+      if (stateChanged) {
+        Serial.println("Entering POSITIVE_POLARITY: Forward polarity, ramp up voltage, wait for load");
+        // Ramp up voltage to next level
+      }
+      if (isCurrentAboveThreshold()) {
+        currentState = VP_COMMAND_ON_LEDS;
+      } else if (isCurrentBelowThreshold()) {
+        currentState = VP_REVERSE_POLARITY;
+      }
+      break;
+
+    case VP_REVERSE_POLARITY:
+      if (stateChanged) {
+        Serial.println("Entering REVERSE_POLARITY: Reverse polarity, wait for load");
+      }
+      if (isCurrentAboveThreshold()) {
+        currentState = VP_SUCCESS;
+      } else if (isForwardPolarity()) {
+        currentState = VP_POSITIVE_POLARITY;
+      } else {
+        currentState = VP_INCREASE_VOLTAGE;
+      }
+      break;
+
+    case VP_COMMAND_ON_LEDS:
+      if (stateChanged) {
+        Serial.println("Entering COMMAND_ON_LEDS: Ramp up voltage, wait for load");
+      }
+      if (isCurrentAboveThreshold()) {
+        currentState = VP_SHORT;
+      } else if (isMaxVoltageReached()) {
+        currentState = VP_NO_STRIP;
+      } else if (isCurrentBelowThreshold()) {
+        currentState = VP_REVERSE_POLARITY;
+      }
+      break;
+
+    case VP_INCREASE_VOLTAGE:
+      if (stateChanged) {
+        Serial.println("Entering INCREASE_VOLTAGE: Increasing voltage");
+        increaseVoltage();
+      }
+      currentState = VP_POSITIVE_POLARITY;
+      break;
+
+    case VP_SUCCESS:
+      if (stateChanged) {
+        Serial.println("Entering SUCCESS: Voltage and polarity identified");
+      }
+      currentState = VP_IDLE;
+      break;
+
+    case VP_SHORT:
+      if (stateChanged) {
+        Serial.println("Entering SHORT: Output short detected");
+      }
+      currentState = VP_IDLE;
+      break;
+
+    case VP_NO_STRIP:
+      if (stateChanged) {
+        Serial.println("Entering NO_STRIP: No LED strip detected");
+      }
+      currentState = VP_IDLE;
+      break;
+  }
+
+  previousState = currentState;
+}
+*/
+
+/*
+Disable Supply, check for response
+Enable 5V
+Command off strip
+Zero Current measurement
+Wait 100ms
+Command on strip
+Measure current
+Check if a 5V strip
+If not enable 12V
+Check if above 500mA, error if true
+Command off strip
+Zero current measurement
+Wait 100ms
+Command on strip
+Measure current
+Check if a 12V strip
+#define AD_TIMEOUT 60
+*/
+/*
+void AutoVoltageDetect() {
+  static uint8_t loopDelay = 0;
+  static uint8_t timeout = AD_TIMEOUT;
+  static PSUState voltageAttempt = PSU_5V;
+  if (autoDetectState != AD_IDLE && autoDetectState != AD_FAIL) {
+    if (timeout == 0) {
+      autoDetectState = AD_FAIL;
+      Serial.println("LED Strip Voltage Auto Detect Timed Out");
+    } else {
+      timeout--;
+    }
+  }
+
+  if (loopDelay == 0) {
+    switch (autoDetectState) {
+      case AD_IDLE:
+        if (autoDetectStart) {
+          autoDetectState = AD_DETECT_POLARITY;
+          sendVoltageCommand(PSU_POWER_OFF);
+          timeout = AD_TIMEOUT;
+          autoDetectStart = false;
+          voltageAttempt = PSU_5V;
+          loopDelay = 1;
+          testLEDStripActive = false;
+          clearLEDStripActive = false;
+          if (verboseLevel >= 1) Serial.println("State: AD_START");
+          sendPolarityCheckCommand(voltageAttempt, PolarityDetectType polarity)
+          sendPolarityCheckCommand();
+          if (verboseLevel >= 1) Serial.println("Checking Polarity.");
+        }
+        break;
+
+      case AD_DETECT_POLARITY:
+        if (getPolarityDetectState() == POLARITY_FORWARD || getPolarityDetectState() == POLARITY_REVERSE) {
+          if (verboseLevel >= 2) Serial.println("Strip polarity detected.");
+          autoDetectState = AD_START;
+          loopDelay = 3;
+          sendVoltageCommand(PSU_POWER_OFF);
+          PSUStatusReceived = false;
+        }
+        if (getPolarityDetectState() == POLARITY_SHORTED || getPolarityDetectState() == POLARITY_NO_DETECT) {
+          if (verboseLevel >= 2) Serial.println("Strip polarity not supported.");
+          autoDetectState = AD_FAIL;
+        }
+        break;
+
+      case AD_START:
+        if (PSUStatusReceived && loopDelay == 0) {
+          autoDetectState = AD_ENABLE_POWER;
+          sendVoltageCommand(voltageAttempt);
+          clearLEDStripActive = true;
+          if (verboseLevel >= 2) Serial.println("State: AD_ENABLE_POWER");
+          if (voltageAttempt == PSU_5V) {
+            if (verboseLevel >= 2) Serial.println("Turing on 5V supply");
+          }
+          if (voltageAttempt == PSU_12V) {
+            if (verboseLevel >= 2) Serial.println("Turing on 12V supply");
+          }
+        }
+        break;
+
+      case AD_ENABLE_POWER:
+        if (PSUStatusReceived) {
+          autoDetectState = AD_TESTSHORT;
+          if (verboseLevel >= 2) Serial.println("State: AD_TESTSHORT");
+          loopDelay = 5;
+        }
+        break;
+
+      case AD_TESTSHORT:
+        clearLEDStripActive = false;
+        sendZeroCurrentCommand();
+        autoDetectState = AD_ZERO_CURRENT;
+        if (verboseLevel >= 2) Serial.println("State: AD_ZERO_CURRENT");
+        if (verboseLevel >= 2) Serial.println("Zeroing current measurement");
+        break;
+
+      case AD_ZERO_CURRENT:
+        if (currentRequestReturned()) {
+          autoDetectState = AD_COMMAND_STRIP;
+          if (verboseLevel >= 2) Serial.println("State: AD_COMMAND_STRIP");
+          loopDelay = 5;
+          testLEDStripActive = true;
+          if (verboseLevel >= 2) Serial.println("Measuring current");
+        }
+        break;
+
+      case AD_COMMAND_STRIP:
+        if (loopDelay == 0) {
+          sendCurrentMeasureCommand();
+          autoDetectState = AD_MEASURE_CURRENT;
+          if (verboseLevel >= 2) Serial.println("State: AD_MEASURE_CURRENT");
+        }
+        break;
+
+      case AD_MEASURE_CURRENT:
+        if (currentRequestReturned()) {
+          if (getCurrentValue() > 0.1) {
+            testLEDStripActive = false;
+            clearLEDStripActive = true;
+            autoDetectState = AD_COMPLETE;
+            Serial.println("State: AD_COMPLETE");
+            sendVoltageCommand(PSU_POWER_OFF);
+          } else {
+            if (voltageAttempt == PSU_5V) {
+              if (verboseLevel >= 1) Serial.println("Strip not detected at 5V");
+              voltageAttempt = PSU_12V;
+              testLEDStripActive = false;
+              autoDetectState = AD_START;
+              sendVoltageCommand(PSU_POWER_OFF);
+            } else {
+            if (voltageAttempt == PSU_12V) {
+              if (verboseLevel >= 1) Serial.println("Strip not detected at 12V");
+              voltageAttempt = PSU_20V;
+              testLEDStripActive = false;
+              autoDetectState = AD_START;
+              sendVoltageCommand(PSU_POWER_OFF);
+            } else {
+              autoDetectState = AD_FAIL;
+              testLEDStripActive = false;
+              Serial.println("No LED Strip Detected");
+            }
+            }
+          }
+        }
+        break;
+
+      case AD_COMPLETE:
+        if (voltageAttempt == PSU_5V) {
+          Serial.println("5V Strip Detected");
+        }
+        if (voltageAttempt == PSU_12V) {
+          Serial.println("12V Strip Detected");
+        }
+        if (voltageAttempt == PSU_20V) {
+          Serial.println("20V Strip Detected");
+        }
+        clearLEDStripActive = false;
+        autoDetectState = AD_IDLE;
+        break;
+
+      case AD_FAIL:
+        if (verboseLevel >= 2) Serial.println("State: AD_FAIL");
+        autoDetectState = AD_IDLE;
+        sendVoltageCommand(PSU_POWER_OFF);
+        testLEDStripActive = false;
+        clearLEDStripActive = false;
+        break;
+
+      default:
+        if (verboseLevel >= 2) Serial.println("Unknown State");
+        break;
+    }
+  } else {
+    if (loopDelay > 0) {
+      loopDelay--;
+    }
+  }
+}
+*/
