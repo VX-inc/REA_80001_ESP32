@@ -18,13 +18,23 @@ void printCommands() {
   Serial.println(__DATE__);
   Serial.println("The test commands are as follows:");
   Serial.println("ip : Print Network Status");
-  Serial.println("0 : Turn off LED Power Supply");
-  Serial.println("20V : Turn on 20V LED Power (currently not functional)");
-  Serial.println("12V : Turn on 12V LED Power");
-  Serial.println("5V : Turn on 5V LED Power");
-  Serial.println("5VPO : Turn on 5V LED Power on power up (persists through power cycle)");
-  Serial.println("12VPO : Turn on 12V LED Power on power up (persists through power cycle)");
-  Serial.println("0VPO : Disables turning on LED Power on start (persists through power cycle)");
+  Serial.println("----- Power Supply -----");
+  Serial.println("0 : Power Supply Off");
+  Serial.println("p5 : +5V Output");
+  Serial.println("n5 : -5V Output");
+  Serial.println("p12 : +12V Output");
+  Serial.println("n12 : -12V Output");
+  Serial.println("p20 : +20V Output");
+  Serial.println("n20 : -20V Output");
+  Serial.println("----- Utility -----");
+
+  //Serial.println("0 : Turn off LED Power Supply");
+  //Serial.println("20V : Turn on 20V LED Power (currently not functional)");
+  //Serial.println("12V : Turn on 12V LED Power");
+  //Serial.println("5V : Turn on 5V LED Power");
+  //Serial.println("5VPO : Turn on 5V LED Power on power up (persists through power cycle)");
+  //Serial.println("12VPO : Turn on 12V LED Power on power up (persists through power cycle)");
+  //Serial.println("0VPO : Disables turning on LED Power on start (persists through power cycle)");
   Serial.println("t : Run/Stop Test Pattern on LED Strip (power must be enabled first)");
   Serial.println("scan : Run I2C Scanner");
   Serial.println("d : Write test DMX Packet");
@@ -78,7 +88,44 @@ void serialParser() {
         printConnectionStatus();
         validCommand = true;
       }
+
       if (strcmp(inputString, "0") == 0) {
+        sendCombinedCommand(PSU_POWER_OFF, FULL_BRIDGE_OFF);
+        Serial.println("Turning off LED Power ");
+        validCommand = true;
+      }
+      if (strcmp(inputString, "p20") == 0) {
+        sendCombinedCommand(PSU_20V, FULL_BRIDGE_POSITIVE);
+        Serial.println("20V Positive LED Power Enabling");
+        validCommand = true;
+      }
+      if (strcmp(inputString, "n20") == 0) {
+        sendCombinedCommand(PSU_20V, FULL_BRIDGE_NEGATIVE);
+        Serial.println("20V Negative LED Power Enabling");
+        validCommand = true;
+      }
+      if (strcmp(inputString, "p12") == 0) {
+        sendCombinedCommand(PSU_12V, FULL_BRIDGE_POSITIVE);
+        Serial.println("12V Positive LED Power Enabling");
+        validCommand = true;
+      }
+      if (strcmp(inputString, "n12") == 0) {
+        sendCombinedCommand(PSU_12V, FULL_BRIDGE_NEGATIVE);
+        Serial.println("12V Negative LED Power Enabling");
+        validCommand = true;
+      }
+      if (strcmp(inputString, "p5") == 0) {
+        sendCombinedCommand(PSU_5V, FULL_BRIDGE_POSITIVE);
+        Serial.println("5V Positive LED Power Enabling");
+        validCommand = true;
+      }
+      if (strcmp(inputString, "n5") == 0) {
+        sendCombinedCommand(PSU_5V, FULL_BRIDGE_NEGATIVE);
+        Serial.println("5V Negative LED Power Enabling");
+        validCommand = true;
+      }
+
+      if (strcmp(inputString, "0V") == 0) {
         sendVoltageCommand(PSU_POWER_OFF);
         Serial.println("Turning off LED Power ");
         validCommand = true;
